@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IAL | International Association League</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="icon" type="image/png" href="favicon.png">
+<style>
+:root{
+  --black:#000000;
+  --near-black:#0a0a0a;
+  --panel:#121212;
+  --gray:rgba(255,255,255,0.06);
+  --gray-border:rgba(255,255,255,0.14);
+  --white:#f5f5f5;
+  --white-dim:rgba(245,245,245,0.62);
+  --radius:16px;
+  --ease:cubic-bezier(.22,1,.36,1);
+  --accent:#ffffff;
+  --accent-rgb:255,255,255;
+  --accent-text:#000000;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{background:var(--black);color:var(--white);font-family:'Rajdhani',sans-serif;overflow-x:hidden;min-height:100vh;}
+h1,h2,h3,.display{font-family:'Bebas Neue',sans-serif;letter-spacing:1px;}
+b,strong{color:var(--white);font-weight:700;}
+::-webkit-scrollbar{width:8px;}
+::-webkit-scrollbar-track{background:var(--near-black);}
+::-webkit-scrollbar-thumb{background:#444;border-radius:4px;}
+
+/* ============ BACKGROUND ============ */
+#bg-canvas{position:fixed;inset:0;z-index:0;background:radial-gradient(ellipse at 50% 0%, #141414 0%, #000 60%);}
+#icon-field{position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none;}
+.float-icon{position:absolute;opacity:0.14;animation:drift linear infinite;}
+@keyframes drift{0%{transform:translate(0,0) rotate(0deg);}50%{transform:translate(30px,-40px) rotate(180deg);}100%{transform:translate(0,0) rotate(360deg);}}
+
+/* ============ LOADING SCREEN ============ */
+#loading-screen{position:fixed;inset:0;z-index:1000;background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;transition:opacity .9s var(--ease), visibility .9s var(--ease);}
+#loading-screen.hide{opacity:0;visibility:hidden;pointer-events:none;}
+.load-emblem{width:96px;height:96px;border-radius:50%;border:2px solid var(--accent);display:flex;align-items:center;justify-content:center;animation:pulseLogo 2.2s ease-in-out infinite;box-shadow:0 0 24px rgba(var(--accent-rgb),0.35);}
+.load-emblem span{font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:1px;}
+.load-emblem.finish{animation:none;transform:scale(1.2);opacity:0;transition:transform .7s var(--ease),opacity .7s var(--ease);}
+@keyframes pulseLogo{0%,100%{box-shadow:0 0 14px rgba(var(--accent-rgb),0.25);}50%{box-shadow:0 0 30px rgba(var(--accent-rgb),0.55);}}
+.load-text{font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:5px;color:var(--white-dim);text-transform:uppercase;transition:opacity .5s;}
+.load-text.finish{opacity:0;}
+.load-bar-wrap{width:250px;height:5px;border-radius:3px;background:rgba(255,255,255,0.08);overflow:hidden;border:1px solid var(--gray-border);transition:opacity .5s;}
+.load-bar-wrap.finish{opacity:0;}
+.load-bar{height:100%;width:0%;border-radius:3px;background:linear-gradient(90deg,#888,var(--accent));box-shadow:0 0 12px rgba(var(--accent-rgb),0.6);transition:width 4.4s cubic-bezier(.4,0,.2,1);}
+
+/* ============ NAV ============ */
+header{position:fixed;top:0;left:0;right:0;z-index:500;display:flex;align-items:center;justify-content:space-between;padding:16px 5%;background:rgba(0,0,0,0.55);backdrop-filter:blur(14px);border-bottom:1px solid var(--gray-border);opacity:0;transform:translateY(-20px);transition:opacity .7s var(--ease), transform .7s var(--ease);}
+header.show{opacity:1;transform:translateY(0);}
+.nav-brand{display:flex;align-items:center;gap:10px;cursor:pointer;}
+.nav-brand .mini-emblem{width:34px;height:34px;border-radius:50%;border:1.5px solid var(--accent);display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:12px;box-shadow:0 0 10px rgba(var(--accent-rgb),0.4);}
+.nav-brand .nav-title{font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:1px;}
+nav ul{list-style:none;display:flex;gap:26px;}
+nav a{color:var(--white-dim);text-decoration:none;font-weight:600;font-size:14px;letter-spacing:0.5px;position:relative;transition:color .3s;cursor:pointer;}
+nav a:hover, nav a.active{color:var(--white);}
+nav a::after{content:"";position:absolute;left:0;bottom:-6px;width:0;height:2px;background:var(--accent);box-shadow:0 0 8px rgba(var(--accent-rgb),0.6);transition:width .3s var(--ease);}
+nav a:hover::after, nav a.active::after{width:100%;}
+
+/* ============ LAYOUT ============ */
+main{position:relative;z-index:2;padding-top:90px;}
+.container{max-width:1000px;margin:0 auto;padding:0 5%;}
+.reveal{opacity:0;transform:translateY(24px) scale(0.97);}
+body.site-revealed .reveal{animation:revealUp .85s var(--ease) forwards;}
+body.site-revealed .hero-emblem.reveal{animation-delay:.05s;}
+body.site-revealed .hero h1.reveal{animation-delay:.2s;}
+body.site-revealed .hero p.tagline.reveal{animation-delay:.35s;}
+body.site-revealed .hero-buttons.reveal{animation-delay:.45s;}
+body.site-revealed .stats-row.reveal{animation-delay:.58s;}
+@keyframes revealUp{0%{opacity:0;transform:translateY(24px) scale(0.97);}60%{opacity:1;}100%{opacity:1;transform:translateY(0) scale(1);}}
+
+/* ============ HERO ============ */
+.hero{display:flex;flex-direction:column;align-items:center;text-align:center;padding:56px 5% 20px;}
+.hero-emblem{width:104px;height:104px;border-radius:50%;border:2px solid var(--accent);display:flex;align-items:center;justify-content:center;margin-bottom:20px;animation:floatLogo 5s ease-in-out infinite;box-shadow:0 0 26px rgba(var(--accent-rgb),0.3);}
+.hero-emblem span{font-family:'Bebas Neue',sans-serif;font-size:32px;letter-spacing:1px;}
+@keyframes floatLogo{0%,100%{transform:translateY(0);}50%{transform:translateY(-8px);}}
+.hero h1{font-size:clamp(24px,5vw,40px);text-shadow:0 0 18px rgba(var(--accent-rgb),0.3);}
+.hero h1 .pipe{color:var(--white-dim);margin:0 10px;font-family:'Rajdhani',sans-serif;font-weight:600;}
+.hero p.tagline{margin-top:14px;font-size:16px;color:var(--white-dim);max-width:560px;line-height:1.6;}
+
+.hero-buttons{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;margin-top:26px;}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:12px 26px;border-radius:30px;text-decoration:none;font-weight:700;font-size:14px;letter-spacing:0.5px;border:1px solid var(--gray-border);cursor:pointer;transition:transform .3s var(--ease), box-shadow .3s, background .3s;}
+.btn-primary{background:var(--accent);color:var(--accent-text);border:none;box-shadow:0 6px 20px rgba(var(--accent-rgb),0.25);}
+.btn-primary:hover{transform:translateY(-3px);box-shadow:0 10px 28px rgba(var(--accent-rgb),0.4);}
+.btn-outline{background:var(--gray);color:var(--white);}
+.btn-outline:hover{transform:translateY(-3px);background:rgba(var(--accent-rgb),0.14);border-color:var(--accent);}
+
+/* ============ STATS ROW ============ */
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:44px;}
+.stat-card{background:#0a0a0a;border:1px solid var(--gray-border);border-radius:14px;padding:22px 14px;text-align:center;transition:transform .35s var(--ease), box-shadow .35s;}
+.stat-card:hover{transform:translateY(-5px);box-shadow:0 14px 28px rgba(var(--accent-rgb),0.1);}
+.stat-icon{font-size:22px;margin-bottom:8px;}
+.stat-label{font-size:13px;font-weight:700;color:var(--white);}
+.stat-sub{font-size:11px;color:var(--white-dim);margin-top:3px;text-transform:uppercase;letter-spacing:0.5px;}
+
+/* ============ SECTION TITLES ============ */
+.section-title{text-align:center;margin:80px 0 34px;}
+.section-title h2{font-size:32px;}
+.section-title p{color:var(--white-dim);font-size:13px;margin-top:6px;letter-spacing:1.5px;text-transform:uppercase;}
+
+/* ============ SCHEDULE ============ */
+.match-list{display:flex;flex-direction:column;gap:14px;}
+.match-card{display:flex;align-items:center;justify-content:space-between;gap:14px;background:var(--panel);border:1px solid var(--gray-border);border-radius:14px;padding:18px 22px;transition:border-color .3s, transform .3s var(--ease);}
+.match-card:hover{border-color:rgba(var(--accent-rgb),0.35);transform:translateX(4px);}
+.match-teams{display:flex;align-items:center;gap:14px;flex:1;}
+.team{display:flex;align-items:center;gap:10px;flex:1;}
+.team-crest{width:34px;height:34px;border-radius:8px;background:var(--gray);border:1px solid var(--gray-border);display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:12px;flex-shrink:0;}
+.team-name{font-weight:600;font-size:14.5px;}
+.team.away{flex-direction:row-reverse;text-align:right;}
+.match-vs{font-family:'Bebas Neue',sans-serif;font-size:13px;color:var(--white-dim);padding:0 6px;}
+.match-meta{text-align:right;flex-shrink:0;min-width:100px;}
+.match-date{font-size:12.5px;color:var(--white-dim);}
+.match-time{font-family:'Bebas Neue',sans-serif;font-size:18px;}
+.match-status{display:inline-block;margin-top:4px;font-size:10px;letter-spacing:1px;text-transform:uppercase;padding:2px 8px;border-radius:10px;background:var(--gray);color:var(--white-dim);}
+.match-status.live{background:rgba(255,70,70,0.18);color:#ff6b6b;}
+
+/* ============ RULES ============ */
+.rules-list{display:flex;flex-direction:column;gap:12px;}
+.rule-item{display:flex;gap:16px;background:var(--panel);border:1px solid var(--gray-border);border-radius:14px;padding:18px 22px;}
+.rule-num{flex-shrink:0;width:32px;height:32px;border-radius:50%;border:1.5px solid var(--accent);display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:15px;box-shadow:0 0 10px rgba(var(--accent-rgb),0.25);}
+.rule-text h4{font-size:15.5px;margin-bottom:4px;}
+.rule-text p{font-size:13.5px;color:var(--white-dim);line-height:1.55;}
+
+/* ============ PLAYER STATS TABLE ============ */
+.panel{background:var(--panel);border:1px solid var(--gray-border);border-radius:var(--radius);padding:26px;margin-bottom:20px;overflow-x:auto;}
+table{width:100%;border-collapse:collapse;min-width:520px;}
+thead th{text-align:left;font-size:11.5px;letter-spacing:1.3px;text-transform:uppercase;color:var(--white-dim);padding:10px 12px;border-bottom:1px solid var(--gray-border);}
+tbody td{padding:13px 12px;font-size:14.5px;border-bottom:1px solid rgba(255,255,255,0.06);color:var(--white-dim);}
+tbody tr:hover{background:rgba(255,255,255,0.03);}
+tbody td.rank{font-family:'Bebas Neue',sans-serif;color:var(--accent);font-size:16px;}
+tbody td.name{color:var(--white);font-weight:600;}
+.empty-row td{text-align:center;padding:30px;font-style:italic;}
+
+/* ============ CHAMPIONS ============ */
+.champions-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:18px;}
+.champion-card{background:var(--panel);border:1px solid var(--gray-border);border-radius:16px;padding:26px 20px;text-align:center;transition:transform .35s var(--ease), box-shadow .35s, border-color .35s;position:relative;overflow:hidden;}
+.champion-card:hover{transform:translateY(-6px);box-shadow:0 16px 30px rgba(var(--accent-rgb),0.1);border-color:rgba(var(--accent-rgb),0.35);}
+.champion-card::before{content:"";position:absolute;top:0;left:0;width:100%;height:3px;background:linear-gradient(90deg,transparent,var(--accent),transparent);opacity:0.5;}
+.champion-trophy{font-size:30px;margin-bottom:10px;}
+.champion-season{font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--white-dim);}
+.champion-club{font-family:'Bebas Neue',sans-serif;font-size:22px;margin-top:4px;}
+
+/* ============ FOOTER ============ */
+footer{border-top:1px solid var(--gray-border);padding:40px 5% 30px;text-align:center;color:var(--white-dim);font-size:13px;letter-spacing:0.5px;background:rgba(0,0,0,0.5);margin-top:80px;}
+footer .foot-brand{font-family:'Bebas Neue',sans-serif;font-size:19px;color:var(--accent);margin-bottom:8px;}
+footer .foot-orn{margin:14px auto;width:60px;height:1px;background:linear-gradient(90deg,transparent,rgba(var(--accent-rgb),0.6),transparent);}
+
+/* ============ BACK TO TOP ============ */
+#back-to-top{position:fixed;bottom:26px;right:26px;z-index:400;width:46px;height:46px;border-radius:50%;background:var(--gray);border:1px solid var(--gray-border);backdrop-filter:blur(10px);color:#fff;display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer;opacity:0;pointer-events:none;transition:opacity .4s, transform .3s var(--ease), box-shadow .3s;}
+#back-to-top.show{opacity:1;pointer-events:auto;}
+#back-to-top:hover{transform:translateY(-4px);box-shadow:0 8px 20px rgba(var(--accent-rgb),0.3);border-color:var(--accent);}
+
+/* ============ RESPONSIVE ============ */
+@media (max-width:768px){
+  nav ul{gap:14px;}
+  nav ul li a{font-size:12px;}
+  .stats-row{grid-template-columns:1fr 1fr;}
+  .match-card{flex-direction:column;align-items:stretch;gap:10px;}
+  .match-meta{text-align:left;}
+}
+@media (max-width:520px){
+  header{padding:14px 4%;}
+  .nav-brand .nav-title{font-size:12px;}
+  .stats-row{grid-template-columns:1fr 1fr;}
+  .hero-buttons{flex-direction:column;width:100%;}
+  .btn{justify-content:center;}
+  table{min-width:460px;}
+}
+</style>
+</head>
+<body>
+
+<canvas id="bg-canvas"></canvas>
+<div id="icon-field"></div>
+
+<!-- LOADING SCREEN -->
+<div id="loading-screen">
+  <div class="load-emblem"><span>IAL</span></div>
+  <div class="load-text">Loading</div>
+  <div class="load-bar-wrap"><div class="load-bar" id="load-bar"></div></div>
+</div>
+
+<!-- HEADER -->
+<header id="site-header">
+  <div class="nav-brand" onclick="window.scrollTo({top:0,behavior:'smooth'})">
+    <div class="mini-emblem">IAL</div>
+    <div class="nav-title">IAL League</div>
+  </div>
+  <nav>
+    <ul>
+      <li><a onclick="scrollToSection('schedule')">Расписание</a></li>
+      <li><a onclick="scrollToSection('rules')">Правила</a></li>
+      <li><a onclick="scrollToSection('players')">Стата игроков</a></li>
+      <li><a onclick="scrollToSection('champions')">Чемпионы</a></li>
+    </ul>
+  </nav>
+</header>
+
+<main>
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="hero-emblem reveal"><span>IAL</span></div>
+    <h1 class="reveal">IAL <span class="pipe">|</span> International Association League</h1>
+    <p class="tagline reveal">Одна из самых популярных и активных лиг в TG, тут творится история вместе с вами.</p>
+    <div class="hero-buttons reveal">
+      <a class="btn btn-primary" href="https://t.me/" target="_blank">✉️ Написать Овнеру</a>
+      <a class="btn btn-outline" href="https://t.me/" target="_blank">📢 Telegram канал</a>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="stats-row reveal">
+      <div class="stat-card">
+        <div class="stat-icon">⚖️</div>
+        <div class="stat-label">Честное судейство</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">🎂</div>
+        <div class="stat-label">Нам уже 1+ год</div>
+        <div class="stat-sub">существования лиги</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">🏆</div>
+        <div class="stat-label">20+ сезонов</div>
+        <div class="stat-sub">лиги</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">📅</div>
+        <div class="stat-label">Стабильные матчи</div>
+      </div>
+    </div>
+
+    <!-- SCHEDULE -->
+    <div class="section-title reveal" id="schedule">
+      <h2>Расписание</h2>
+      <p>Ближайшие и прошедшие матчи</p>
+    </div>
+    <div class="match-list reveal" id="match-list"></div>
+
+    <!-- RULES -->
+    <div class="section-title reveal" id="rules">
+      <h2>Правила</h2>
+      <p>Основные положения лиги</p>
+    </div>
+    <div class="rules-list reveal" id="rules-list"></div>
+
+    <!-- PLAYER STATS -->
+    <div class="section-title reveal" id="players">
+      <h2>Стата игроков</h2>
+      <p>Топ бомбардиров и ассистентов</p>
+    </div>
+    <div class="panel reveal">
+      <table>
+        <thead>
+          <tr><th>#</th><th>Игрок</th><th>Клуб</th><th>Матчи</th><th>Голы</th><th>Ассисты</th></tr>
+        </thead>
+        <tbody id="players-tbody"></tbody>
+      </table>
+    </div>
+
+    <!-- CHAMPIONS -->
+    <div class="section-title reveal" id="champions">
+      <h2>Чемпионы</h2>
+      <p>История сезонов IAL</p>
+    </div>
+    <div class="champions-grid reveal" id="champions-grid"></div>
+
+  </div>
+</main>
+
+<footer>
+  <div class="foot-brand">IAL — International Association League</div>
+  <div class="foot-orn"></div>
+  <div>Честная лига · Стабильные сезоны · История пишется вместе с вами</div>
+</footer>
+
+<div id="back-to-top">↑</div>
+
+<script>
+/* ==================================================================
+   DATA — редактируй эти массивы под реальные данные лиги.
+================================================================== */
+const MATCHES = [
+  { home:"FC Vantage", away:"Union City", date:"12.08", time:"20:00", status:"upcoming" },
+  { home:"North Star", away:"Real Kadet", date:"12.08", time:"21:30", status:"live" },
+  { home:"Atletico CIS", away:"Dynamo Line", date:"09.08", time:"19:00", status:"finished" },
+  { home:"West End FC", away:"FC Vantage", date:"05.08", time:"20:00", status:"finished" },
+];
+
+const RULES = [
+  { title:"Честная игра", text:"Запрещены читы, баги и любые формы нечестной игры. Нарушение — бан без предупреждения." },
+  { title:"Состав команды", text:"Минимум 7 игроков в заявке клуба, капитан назначается владельцем клуба." },
+  { title:"Неявка", text:"Опоздание больше 10 минут на матч засчитывается как техническое поражение 0:3." },
+  { title:"Судейство", text:"Все решения судей окончательны. Апелляции подаются в течение 24 часов после матча." },
+];
+
+const PLAYERS = [
+  // { rank:1, name:"Игрок", club:"Клуб", apps:10, goals:8, assists:4 },
+];
+
+const CHAMPIONS = [
+  { season:"Сезон 20", club:"FC Vantage" },
+  { season:"Сезон 19", club:"North Star" },
+  { season:"Сезон 18", club:"Atletico CIS" },
+  { season:"Сезон 17", club:"Real Kadet" },
+];
+
+/* ================= RENDER: SCHEDULE ================= */
+const statusLabel = { upcoming:"Скоро", live:"LIVE", finished:"Завершён" };
+document.getElementById('match-list').innerHTML = MATCHES.map(m=>`
+  <div class="match-card">
+    <div class="match-teams">
+      <div class="team home">
+        <div class="team-crest">${m.home.slice(0,2).toUpperCase()}</div>
+        <div class="team-name">${m.home}</div>
+      </div>
+      <div class="match-vs">VS</div>
+      <div class="team away">
+        <div class="team-crest">${m.away.slice(0,2).toUpperCase()}</div>
+        <div class="team-name">${m.away}</div>
+      </div>
+    </div>
+    <div class="match-meta">
+      <div class="match-date">${m.date}</div>
+      <div class="match-time">${m.time}</div>
+      <div class="match-status ${m.status==='live'?'live':''}">${statusLabel[m.status]}</div>
+    </div>
+  </div>
+`).join('');
+
+/* ================= RENDER: RULES ================= */
+document.getElementById('rules-list').innerHTML = RULES.map((r,i)=>`
+  <div class="rule-item">
+    <div class="rule-num">${i+1}</div>
+    <div class="rule-text"><h4>${r.title}</h4><p>${r.text}</p></div>
+  </div>
+`).join('');
+
+/* ================= RENDER: PLAYER STATS ================= */
+const playersTbody = document.getElementById('players-tbody');
+if(PLAYERS.length === 0){
+  playersTbody.innerHTML = `<tr class="empty-row"><td colspan="6">Статистика игроков появится здесь после начала сезона.</td></tr>`;
+} else {
+  playersTbody.innerHTML = PLAYERS.map(p=>`
+    <tr>
+      <td class="rank">${p.rank}</td>
+      <td class="name">${p.name}</td>
+      <td>${p.club}</td>
+      <td>${p.apps}</td>
+      <td>${p.goals}</td>
+      <td>${p.assists}</td>
+    </tr>
+  `).join('');
+}
+
+/* ================= RENDER: CHAMPIONS ================= */
+document.getElementById('champions-grid').innerHTML = CHAMPIONS.map(c=>`
+  <div class="champion-card">
+    <div class="champion-trophy">🏆</div>
+    <div class="champion-season">${c.season}</div>
+    <div class="champion-club">${c.club}</div>
+  </div>
+`).join('');
+
+/* ================= LOADING SCREEN ================= */
+window.addEventListener('load', () => {
+  requestAnimationFrame(() => { document.getElementById('load-bar').style.width = '100%'; });
+  setTimeout(() => {
+    document.querySelector('.load-emblem').classList.add('finish');
+    document.querySelector('.load-text').classList.add('finish');
+    document.querySelector('.load-bar-wrap').classList.add('finish');
+    setTimeout(() => {
+      document.getElementById('loading-screen').classList.add('hide');
+      document.getElementById('site-header').classList.add('show');
+      document.body.classList.add('site-revealed');
+    }, 350);
+  }, 3200);
+});
+
+/* ================= PARTICLE BACKGROUND ================= */
+const canvas = document.getElementById('bg-canvas');
+const ctx = canvas.getContext('2d');
+let W,H,particles=[];
+function resize(){W=canvas.width=window.innerWidth;H=canvas.height=window.innerHeight;}
+window.addEventListener('resize', resize);
+resize();
+const PCOUNT = Math.min(60, Math.floor(window.innerWidth/20));
+for(let i=0;i<PCOUNT;i++){
+  particles.push({x:Math.random()*W,y:Math.random()*H,r:Math.random()*1.6+0.5,vx:(Math.random()-0.5)*0.2,vy:(Math.random()-0.5)*0.2});
+}
+function drawParticles(){
+  ctx.clearRect(0,0,W,H);
+  for(const p of particles){
+    p.x+=p.vx;p.y+=p.vy;
+    if(p.x<0)p.x=W;if(p.x>W)p.x=0;if(p.y<0)p.y=H;if(p.y>H)p.y=0;
+    ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fillStyle='rgba(255,255,255,0.22)';ctx.fill();
+  }
+  for(let i=0;i<particles.length;i++){
+    for(let j=i+1;j<particles.length;j++){
+      const a=particles[i],b=particles[j];
+      const d=Math.hypot(a.x-b.x,a.y-b.y);
+      if(d<100){ctx.beginPath();ctx.strokeStyle=`rgba(255,255,255,${0.06*(1-d/100)})`;ctx.lineWidth=1;ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();}
+    }
+  }
+  requestAnimationFrame(drawParticles);
+}
+drawParticles();
+
+/* ================= FLOATING CHAMPION ICONS ================= */
+const TROPHY_SVG = `<svg width="54" height="54" viewBox="0 0 54 54" xmlns="http://www.w3.org/2000/svg"><path d="M17 8h20v14a10 10 0 0 1-20 0V8z" fill="none" stroke="white" stroke-width="2"/><path d="M17 12h-6a5 5 0 0 0 5 8" fill="none" stroke="white" stroke-width="1.5"/><path d="M37 12h6a5 5 0 0 1-5 8" fill="none" stroke="white" stroke-width="1.5"/><line x1="27" y1="32" x2="27" y2="40" stroke="white" stroke-width="2"/><line x1="18" y1="46" x2="36" y2="46" stroke="white" stroke-width="2"/><line x1="27" y1="40" x2="27" y2="46" stroke="white" stroke-width="2"/></svg>`;
+const MEDAL_SVG = `<svg width="50" height="50" viewBox="0 0 50 50" xmlns="http://www.w3.org/2000/svg"><circle cx="25" cy="30" r="14" fill="none" stroke="white" stroke-width="2"/><circle cx="25" cy="30" r="7" fill="none" stroke="white" stroke-width="1.2"/><path d="M18 18 L11 3 M32 18 L39 3" stroke="white" stroke-width="2" fill="none"/></svg>`;
+const SHIELD_SVG = `<svg width="52" height="52" viewBox="0 0 52 52" xmlns="http://www.w3.org/2000/svg"><path d="M26 4 L46 12 V26 C46 38 38 46 26 50 C14 46 6 38 6 26 V12 Z" fill="none" stroke="white" stroke-width="2"/><path d="M18 26 L24 32 L36 18" fill="none" stroke="white" stroke-width="2"/></svg>`;
+const STAR_SVG = `<svg width="46" height="46" viewBox="0 0 46 46" xmlns="http://www.w3.org/2000/svg"><polygon points="23,2 28,17 44,17 31,27 36,42 23,33 10,42 15,27 2,17 18,17" fill="none" stroke="white" stroke-width="1.6"/></svg>`;
+
+const field = document.getElementById('icon-field');
+const ICONS = [TROPHY_SVG, MEDAL_SVG, SHIELD_SVG, STAR_SVG];
+const ICOUNT = Math.min(22, Math.floor(window.innerWidth/55));
+for(let i=0;i<ICOUNT;i++){
+  const el = document.createElement('div');
+  el.className='float-icon';
+  el.innerHTML = ICONS[i % ICONS.length];
+  const size = 42 + Math.random()*58;
+  el.style.width = size+'px';
+  el.style.height = size+'px';
+  el.style.left = Math.random()*100+'%';
+  el.style.top = Math.random()*100+'%';
+  el.style.opacity = (0.09 + Math.random()*0.14).toFixed(2);
+  el.style.filter = 'blur(1px)';
+  el.style.animationDuration = (14 + Math.random()*14)+'s';
+  el.style.animationDelay = (Math.random()*-20)+'s';
+  field.appendChild(el);
+}
+
+/* ================= NAV SCROLL + ACTIVE STATE ================= */
+function scrollToSection(id){
+  const el = document.getElementById(id);
+  if(el) el.scrollIntoView({behavior:'smooth', block:'start'});
+}
+const navLinks = document.querySelectorAll('nav a');
+const sections = ['schedule','rules','players','champions'].map(id=>document.getElementById(id));
+window.addEventListener('scroll', ()=>{
+  let current = null;
+  sections.forEach(sec=>{
+    if(sec && window.scrollY >= sec.offsetTop - 140) current = sec.id;
+  });
+  navLinks.forEach(a=> a.classList.remove('active'));
+  if(current){
+    const idx = sections.findIndex(s=>s && s.id===current);
+    if(navLinks[idx]) navLinks[idx].classList.add('active');
+  }
+});
+
+/* ================= BACK TO TOP ================= */
+const backBtn = document.getElementById('back-to-top');
+window.addEventListener('scroll', ()=>{
+  if(window.scrollY>400) backBtn.classList.add('show'); else backBtn.classList.remove('show');
+});
+backBtn.addEventListener('click', ()=> window.scrollTo({top:0,behavior:'smooth'}));
+</script>
+</body>
+</html>
